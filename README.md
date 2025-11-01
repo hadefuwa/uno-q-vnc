@@ -1,13 +1,12 @@
 # Arduino Uno Q Setup Guide
 
-This guide will help you set up your Arduino Uno Q (Debian-based) with passwordless SSH access, VNC server, auto-login, and disabled power management.
+This guide will help you set up your Arduino Uno Q (Debian-based) with VNC server, auto-login, and disabled power management.
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
-- [Step 1: Set Up Passwordless SSH Access](#step-1-set-up-passwordless-ssh-access)
-- [Step 2: Install and Configure VNC Server](#step-2-install-and-configure-vnc-server)
-- [Step 3: Enable Auto-Login](#step-3-enable-auto-login)
-- [Step 4: Disable Screensaver and Sleep Modes](#step-4-disable-screensaver-and-sleep-modes)
+- [Step 1: Install and Configure VNC Server](#step-1-install-and-configure-vnc-server)
+- [Step 2: Enable Auto-Login](#step-2-enable-auto-login)
+- [Step 3: Disable Screensaver and Sleep Modes](#step-3-disable-screensaver-and-sleep-modes)
 - [Troubleshooting](#troubleshooting)
 - [Quick Reference](#quick-reference)
 
@@ -39,70 +38,11 @@ You can test by SSHing: `ssh username@IP_ADDRESS`
 
 ---
 
-## Step 1: Set Up Passwordless SSH Access
-
-This allows you to connect to your Arduino via SSH without entering a password every time.
-
-### 1.1 Generate SSH Key (on your computer)
-
-**On Windows (using Git Bash or WSL):**
-```bash
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
-```
-
-**On Linux/Mac:**
-```bash
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
-```
-
-This creates two files:
-- `~/.ssh/id_rsa` - Your private key (keep this secret!)
-- `~/.ssh/id_rsa.pub` - Your public key (this goes on the Arduino)
-
-### 1.2 Copy SSH Key to Arduino
-
-**Method 1: Using ssh-copy-id (Linux/Mac)**
-```bash
-ssh-copy-id arduino@192.168.0.125
-```
-Enter your password when prompted.
-
-**Method 2: Manual Method (Works on all platforms)**
-
-1. Display your public key:
-   ```bash
-   cat ~/.ssh/id_rsa.pub
-   ```
-
-2. Copy the entire output (starts with `ssh-rsa ...`)
-
-3. SSH into your Arduino:
-   ```bash
-   ssh arduino@192.168.0.125
-   ```
-
-4. On the Arduino, run these commands:
-   ```bash
-   mkdir -p ~/.ssh
-   chmod 700 ~/.ssh
-   echo "PASTE_YOUR_PUBLIC_KEY_HERE" >> ~/.ssh/authorized_keys
-   chmod 600 ~/.ssh/authorized_keys
-   exit
-   ```
-
-5. Test passwordless login:
-   ```bash
-   ssh arduino@192.168.0.125
-   ```
-   You should now connect without a password!
-
----
-
-## Step 2: Install and Configure VNC Server
+## Step 1: Install and Configure VNC Server
 
 VNC allows you to remotely view and control the Arduino's desktop.
 
-### 2.1 Install x11vnc
+### 1.1 Install x11vnc
 
 SSH into your Arduino:
 ```bash
@@ -115,7 +55,7 @@ sudo apt update
 sudo apt install -y x11vnc
 ```
 
-### 2.2 Set VNC Password
+### 1.2 Set VNC Password
 
 Create a password file for VNC:
 ```bash
@@ -125,7 +65,7 @@ x11vnc -storepasswd YOUR_PASSWORD ~/.vnc/passwd
 
 Replace `YOUR_PASSWORD` with your desired VNC password.
 
-### 2.3 Create VNC Service
+### 1.3 Create VNC Service
 
 Create a systemd service to auto-start VNC on boot:
 
@@ -157,7 +97,7 @@ WantedBy=graphical.target
 
 Save and exit (Ctrl+X, then Y, then Enter).
 
-### 2.4 Enable and Start VNC Service
+### 1.4 Enable and Start VNC Service
 
 ```bash
 sudo systemctl daemon-reload
@@ -165,7 +105,7 @@ sudo systemctl enable x11vnc.service
 sudo systemctl start x11vnc.service
 ```
 
-### 2.5 Verify VNC is Running
+### 1.5 Verify VNC is Running
 
 Check the service status:
 ```bash
@@ -179,7 +119,7 @@ ss -tlnp | grep 5900
 
 You should see x11vnc listening on port 5900.
 
-### 2.6 Connect with VNC Viewer
+### 1.6 Connect with VNC Viewer
 
 1. Open **RealVNC Viewer** on your computer
 2. Enter the Arduino's IP address: `192.168.0.125` (or just `192.168.0.125:5900`)
@@ -191,11 +131,11 @@ You should see x11vnc listening on port 5900.
 
 ---
 
-## Step 3: Enable Auto-Login
+## Step 2: Enable Auto-Login
 
 Configure the Arduino to automatically log in without requiring a password at boot.
 
-### 3.1 Configure LightDM (Display Manager)
+### 2.1 Configure LightDM (Display Manager)
 
 SSH into your Arduino:
 ```bash
@@ -218,14 +158,14 @@ greeter-session=lightdm-gtk-greeter
 
 Save and exit (Ctrl+X, then Y, then Enter).
 
-### 3.2 Add User to Autologin Group
+### 2.2 Add User to Autologin Group
 
 ```bash
 sudo groupadd -r autologin 2>/dev/null
 sudo gpasswd -a arduino autologin
 ```
 
-### 3.3 Configure Console Auto-Login (Optional)
+### 2.3 Configure Console Auto-Login (Optional)
 
 This ensures auto-login even if the display manager fails:
 
@@ -248,7 +188,7 @@ Reload systemd:
 sudo systemctl daemon-reload
 ```
 
-### 3.4 Reboot and Test
+### 2.4 Reboot and Test
 
 ```bash
 sudo reboot
@@ -258,11 +198,11 @@ After reboot, the system should automatically log in as `arduino` without prompt
 
 ---
 
-## Step 4: Disable Screensaver and Sleep Modes
+## Step 3: Disable Screensaver and Sleep Modes
 
 Prevent the Arduino from sleeping or turning off the display.
 
-### 4.1 Disable X11 Screensaver
+### 3.1 Disable X11 Screensaver
 
 SSH into your Arduino:
 ```bash
@@ -276,7 +216,7 @@ DISPLAY=:0 xset s noblank
 DISPLAY=:0 xset -dpms
 ```
 
-### 4.2 Make Screensaver Settings Persistent
+### 3.2 Make Screensaver Settings Persistent
 
 Create an autostart script:
 ```bash
@@ -300,7 +240,7 @@ Make it executable:
 chmod +x ~/.config/autostart/disable-screensaver.desktop
 ```
 
-### 4.3 Configure LightDM to Disable Screensaver
+### 3.3 Configure LightDM to Disable Screensaver
 
 ```bash
 sudo mkdir -p /etc/lightdm/lightdm.conf.d
@@ -315,7 +255,7 @@ xserver-command=X -s 0 -dpms
 
 Save and exit.
 
-### 4.4 Disable System Sleep/Suspend/Hibernate
+### 3.4 Disable System Sleep/Suspend/Hibernate
 
 ```bash
 sudo systemctl mask sleep.target
@@ -324,7 +264,7 @@ sudo systemctl mask hibernate.target
 sudo systemctl mask hybrid-sleep.target
 ```
 
-### 4.5 Disable XFCE Power Management (if using XFCE)
+### 3.5 Disable XFCE Power Management (if using XFCE)
 
 ```bash
 DISPLAY=:0 xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/blank-on-ac -s 0
@@ -332,7 +272,7 @@ DISPLAY=:0 xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-enab
 DISPLAY=:0 xfconf-query -c xfce4-screensaver -p /saver/enabled -s false
 ```
 
-### 4.6 Create System-Wide Init Script
+### 3.6 Create System-Wide Init Script
 
 Create a script that runs on boot:
 ```bash
@@ -381,7 +321,7 @@ sudo systemctl enable disable-screensaver.service
 sudo systemctl start disable-screensaver.service
 ```
 
-### 4.7 Verify Settings
+### 3.7 Verify Settings
 
 Check that screensaver is disabled:
 ```bash
@@ -395,18 +335,6 @@ You should see:
 ---
 
 ## Troubleshooting
-
-### SSH Issues
-
-**Problem:** "Connection refused" or "No route to host"
-- **Solution:** Check that the Arduino is on the network. Verify IP address with `ip addr` on the Arduino.
-
-**Problem:** "Permission denied (publickey)"
-- **Solution:** Make sure the public key was copied correctly. Check permissions:
-  ```bash
-  chmod 700 ~/.ssh
-  chmod 600 ~/.ssh/authorized_keys
-  ```
 
 ### VNC Issues
 
@@ -505,7 +433,6 @@ sudo shutdown -h now
 
 | Purpose | File Path |
 |---------|-----------|
-| SSH authorized keys | `~/.ssh/authorized_keys` |
 | VNC password | `~/.vnc/passwd` |
 | VNC service | `/etc/systemd/system/x11vnc.service` |
 | LightDM config | `/etc/lightdm/lightdm.conf` |
@@ -530,7 +457,6 @@ sudo shutdown -h now
 
 After following this guide, your Arduino Uno Q will:
 
-- ✅ Accept SSH connections without password (using SSH keys)
 - ✅ Run a VNC server on port 5900 (accessible via RealVNC Viewer)
 - ✅ Automatically log in on boot (no password prompt)
 - ✅ Never sleep, suspend, or turn off the display
